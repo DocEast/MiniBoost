@@ -1,17 +1,8 @@
-# Boost anod spec (prebuilt minimal Boost)
-
-import os
-from e3.fs import sync_tree
-from e3.os.fs import unixpath
-from e3.anod.loader import spec
-from e3.anod.spec import Anod
-
-
 class Boost(spec('common')):
     """Prebuilt minimal Boost runtime."""
 
     NAME = "boost-1.74-ubuntu24.04-x86_64.zip"
-    URL = "https://github.com/<user>/<repo>/releases/download/v1.0/boost-1.74-ubuntu24.04-x86_64.zip"
+    URL = "https://raw.githubusercontent.com/DocEast/MiniBoost/main/boost-1.74-ubuntu24.04-x86_64.zip"
 
     @property
     def build_deps(self):
@@ -34,22 +25,15 @@ class Boost(spec('common')):
 
         src = self['SRC_DIR']
 
-        # The ZIP should contain:
-        #   boost-minimal/include/boost/...
-        #   boost-minimal/lib/...
         include_src = os.path.join(src, "boost-minimal", "include")
         lib_src = os.path.join(src, "boost-minimal", "lib")
 
         include_dst = os.path.join(self['INSTALL_DIR'], "include")
         lib_dst = os.path.join(self['INSTALL_DIR'], "lib")
 
-        # Copy headers
         sync_tree(include_src, include_dst, delete=True)
-
-        # Copy libraries
         sync_tree(lib_src, lib_dst, delete=True)
 
-        # Normalize lib → lib64
         sync_tree(
             lib_dst,
             os.path.join(self['INSTALL_DIR'], 'lib64'),
