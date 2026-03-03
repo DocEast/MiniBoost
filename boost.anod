@@ -1,41 +1,72 @@
+# Boost anod spec (prebuilt minimal Boost for Ubuntu 24.04 x86_64)
+#
+# This spec assumes the ZIP has the structure:
+#   boost-minimal/
+#       include/boost/...
+#       lib/libboost_*.a / .so
+
+import os
+from e3.fs import sync_tree
+from e3.os.fs import unixpath
+from e3.anod.loader import spec
+from e3.anod.spec import Anod
+
+
 class Boost(spec('common')):
-    """Prebuilt minimal Boost runtime."""
+    """Prebuilt minimal Boost runtime (filesystem, system, regex, date_time)."""
 
     NAME = "boost-1.74-ubuntu24.04-x86_64.zip"
     URL = "https://raw.githubusercontent.com/DocEast/MiniBoost/main/boost-1.74-ubuntu24.04-x86_64.zip"
 
     @property
     def build_deps(self):
+        # No compiler or toolchain needed: we only install prebuilt artifacts.
         return []
 
     @property
     def build_source_list(self):
-        return [Anod.Source(name=Boost.NAME, publish=True)]
+        # Anod will download and cache this ZIP.
+        return [Anod.Source(name=self.NAME, publish=True)]
 
     @property
     def source_pkg_build(self):
+        # Simple HTTPS download of the prebuilt ZIP.
         return [
             self.HTTPSSourceBuilder(
-                name=Boost.NAME,
-                url=Boost.URL)
+                name=self.NAME,
+                url=self.URL
+            )
         ]
 
     @Anod.primitive()
     def build(self):
-
+        # SRC_DIR contains the extracted ZIP contents.
         src = self['SRC_DIR']
 
-        include_src = os.path.join(src, "boost-minimal", "include")
-        lib_src = os.path.join(src, "boost-minimal", "lib")
+        # Expected layout inside the ZIP:
+        #   boost-minimal/include/...
+        #   boost-minimal/lib/...
+        root = os.path.join(src, "boost-minimal")
+        include_src = os.path.join(root, "include")
+        lib_src = os.path.join(root, "lib")
+
+        if not os.path.isdir(include_src):
+            raise RuntimeError(f"Missing include directory: {include_src}")
+        if not os.path.isdir(lib_src):
+            raise RuntimeError(f"Missing lib directory: {lib_src}")
 
         include_dst = os.path.join(self['INSTALL_DIR'], "include")
         lib_dst = os.path.join(self['INSTALL_DIR'], "lib")
 
+        # Install headers
         sync_tree(include_src, include_dst, delete=True)
+
+        # Install libraries
         sync_tree(lib_src, lib_dst, delete=True)
 
+        # Normalize lib → lib64 for consumers expecting lib64
         sync_tree(
             lib_dst,
-            os.path.join(self['INSTALL_DIR'], 'lib64'),
+            os.path.join(self['INSTALL_DIR'], "lib64"),
             delete=True
         )
