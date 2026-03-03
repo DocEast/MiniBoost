@@ -47,10 +47,22 @@ class Boost(spec('common')):
             if os.path.isdir(inner):
                 sync_tree(inner, src, delete=True)
 
-        # --- Ensure correct boost-build.jam exists in SRC_DIR ---
+        # --- Restore the correct Boost 1.74 boost-build.jam ---
+        # Search for the real one inside the extracted tree
         bbj = os.path.join(src, "boost-build.jam")
-        with open(bbj, "w") as f:
-            f.write("boost-build tools/build/src ;\n")
+        found = None
+        for root, dirs, files in os.walk(src):
+            if "boost-build.jam" in files:
+                candidate = os.path.join(root, "boost-build.jam")
+                found = candidate
+                break
+
+        if found is None:
+            raise RuntimeError("Could not locate boost-build.jam inside MiniBoost tree")
+
+        # Copy the real file into SRC_DIR
+        if found != bbj:
+            self.shell("cp", found, bbj)
 
         # --- Run bootstrap ---
         bootstrap_args = [
