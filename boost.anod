@@ -47,22 +47,22 @@ class Boost(spec('common')):
             if os.path.isdir(inner):
                 sync_tree(inner, src, delete=True)
 
-        # --- Restore the correct Boost 1.74 boost-build.jam ---
-        # Search for the real one inside the extracted tree
-        bbj = os.path.join(src, "boost-build.jam")
-        found = None
-        for root, dirs, files in os.walk(src):
-            if "boost-build.jam" in files:
-                candidate = os.path.join(root, "boost-build.jam")
-                found = candidate
-                break
+        # --- Ensure correct top-level boost-build.jam ---
+        top_level_bbj = os.path.join(src, "boost-build.jam")
+        if not os.path.exists(top_level_bbj):
+            raise RuntimeError("MiniBoost ZIP is missing top-level boost-build.jam")
 
-        if found is None:
-            raise RuntimeError("Could not locate boost-build.jam inside MiniBoost tree")
+        # --- Restore missing Boost.Build modules ---
+        # boostcpp.jam (top level)
+        full_boostcpp = os.path.join(src, "boostcpp.jam")
+        if not os.path.exists(full_boostcpp):
+            raise RuntimeError("MiniBoost ZIP is missing boostcpp.jam")
 
-        # Copy the real file into SRC_DIR
-        if found != bbj:
-            self.shell("cp", found, bbj)
+        # tools/boost_install/boost-install.jam
+        boost_install_dir = os.path.join(src, "tools", "boost_install")
+        boost_install_jam = os.path.join(boost_install_dir, "boost-install.jam")
+        if not os.path.exists(boost_install_jam):
+            raise RuntimeError("MiniBoost ZIP is missing tools/boost_install/boost-install.jam")
 
         # --- Run bootstrap ---
         bootstrap_args = [
