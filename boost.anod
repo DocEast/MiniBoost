@@ -47,6 +47,15 @@ class Boost(spec('common')):
             if os.path.isdir(inner):
                 sync_tree(inner, src, delete=True)
 
+        # --- Ensure boost-build.jam exists in SRC_DIR ---
+        bbj = os.path.join(src, "boost-build.jam")
+        if not os.path.exists(bbj):
+            for root, dirs, files in os.walk(src):
+                if "boost-build.jam" in files:
+                    candidate = os.path.join(root, "boost-build.jam")
+                    self.shell("cp", candidate, bbj)
+                    break
+
         # --- Run bootstrap ---
         bootstrap_args = [
             os.environ.get('SHELL', '/bin/bash'),
@@ -55,7 +64,7 @@ class Boost(spec('common')):
             '--without-icu',
             '--with-libraries=filesystem,system,regex,date_time'
         ]
-        self.shell(*bootstrap_args, cwd=self['SRC_DIR'])
+        self.shell(*bootstrap_args, cwd=src)
 
         # --- Select toolset ---
         if self.env.build.os.name == 'darwin':
@@ -65,12 +74,12 @@ class Boost(spec('common')):
 
         # --- Build Boost ---
         self.shell(
-            os.path.join(self['SRC_DIR'], 'b2'),
+            os.path.join(src, 'b2'),
             'link=static',
             f'toolset={toolset}',
             'cxxstd=11',
             'install',
-            cwd=self['SRC_DIR']
+            cwd=src
         )
 
         # --- Normalize lib → lib64 ---
