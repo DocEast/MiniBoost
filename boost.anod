@@ -1,11 +1,4 @@
-# Boost anod spec
-#
-# Updating this spec:
-# 1. Check for new versions at boost.org
-# 2. Update the NAME and URL properties - make sure to update the release number
-#    in the URL
-# 3. run `anod reset` and `anod build boost` to make sure the spec still works
-# 4. run `anod build uxas` and test the result by running examples
+# Boost anod spec (prebuilt minimal Boost)
 
 import os
 from e3.fs import sync_tree
@@ -15,14 +8,14 @@ from e3.anod.spec import Anod
 
 
 class Boost(spec('common')):
-    """Boost provides free peer-reviewed portable C++ source libraries."""
+    """Prebuilt minimal Boost runtime."""
 
-    NAME = "MiniBoost.zip"
-    URL = "https://github.com/DocEast/MiniBoost/archive/refs/heads/main.zip"
+    NAME = "boost-1.74-ubuntu24.04-x86_64.zip"
+    URL = "https://github.com/<user>/<repo>/releases/download/v1.0/boost-1.74-ubuntu24.04-x86_64.zip"
 
     @property
     def build_deps(self):
-        return [Anod.Dependency('compiler')]
+        return []
 
     @property
     def build_source_list(self):
@@ -39,60 +32,26 @@ class Boost(spec('common')):
     @Anod.primitive()
     def build(self):
 
-        # --- Flatten GitHub ZIP wrapper directory ---
         src = self['SRC_DIR']
-        entries = os.listdir(src)
-        if len(entries) == 1:
-            inner = os.path.join(src, entries[0])
-            if os.path.isdir(inner):
-                sync_tree(inner, src, delete=True)
 
-        # --- Ensure correct top-level boost-build.jam ---
-        top_level_bbj = os.path.join(src, "boost-build.jam")
-        if not os.path.exists(top_level_bbj):
-            raise RuntimeError("MiniBoost ZIP is missing top-level boost-build.jam")
+        # The ZIP should contain:
+        #   boost-minimal/include/boost/...
+        #   boost-minimal/lib/...
+        include_src = os.path.join(src, "boost-minimal", "include")
+        lib_src = os.path.join(src, "boost-minimal", "lib")
 
-        # --- Restore missing Boost.Build modules ---
-        # boostcpp.jam (top level)
-        full_boostcpp = os.path.join(src, "boostcpp.jam")
-        if not os.path.exists(full_boostcpp):
-            raise RuntimeError("MiniBoost ZIP is missing boostcpp.jam")
+        include_dst = os.path.join(self['INSTALL_DIR'], "include")
+        lib_dst = os.path.join(self['INSTALL_DIR'], "lib")
 
-        # tools/boost_install/boost-install.jam
-        boost_install_dir = os.path.join(src, "tools", "boost_install")
-        boost_install_jam = os.path.join(boost_install_dir, "boost-install.jam")
-        if not os.path.exists(boost_install_jam):
-            raise RuntimeError("MiniBoost ZIP is missing tools/boost_install/boost-install.jam")
+        # Copy headers
+        sync_tree(include_src, include_dst, delete=True)
 
-        # --- Run bootstrap ---
-        bootstrap_args = [
-            os.environ.get('SHELL', '/bin/bash'),
-            './bootstrap.sh',
-            '--prefix=%s' % unixpath(self['INSTALL_DIR']),
-            '--without-icu',
-            '--with-libraries=filesystem,system,regex,date_time'
-        ]
-        self.shell(*bootstrap_args, cwd=src)
+        # Copy libraries
+        sync_tree(lib_src, lib_dst, delete=True)
 
-        # --- Select toolset ---
-        if self.env.build.os.name == 'darwin':
-            toolset = 'darwin'
-        else:
-            toolset = 'gcc'
-
-        # --- Build Boost ---
-        self.shell(
-            os.path.join(src, 'b2'),
-            'link=static',
-            f'toolset={toolset}',
-            'cxxstd=11',
-            'install',
-            cwd=src
-        )
-
-        # --- Normalize lib → lib64 ---
+        # Normalize lib → lib64
         sync_tree(
-            os.path.join(self['INSTALL_DIR'], 'lib'),
+            lib_dst,
             os.path.join(self['INSTALL_DIR'], 'lib64'),
             delete=True
         )
