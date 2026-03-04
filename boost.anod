@@ -46,7 +46,7 @@ class Boost(spec('common')):
         # Expected layout inside the ZIP:
         #   boost-minimal/include/...
         #   boost-minimal/lib/...
-        include_src = os.path.join(src, "boost")
+        include_src = os.path.join(src, "boost", "include")
         lib_src = os.path.join(src, "boost", "lib")
 
         if not os.path.isdir(include_src):
