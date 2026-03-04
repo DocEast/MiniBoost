@@ -46,8 +46,8 @@ class Boost(spec('common')):
         # Expected layout inside the ZIP:
         #   boost-minimal/include/...
         #   boost-minimal/lib/...
-        include_src = os.path.join(src, "boost", "include")
-        lib_src = os.path.join(src, "boost", "lib")
+        include_src = os.path.join(src, "include")
+        lib_src = os.path.join(src, "lib")
 
         if not os.path.isdir(include_src):
             raise RuntimeError(f"Missing include directory: {include_src}")
