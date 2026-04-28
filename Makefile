@@ -79,9 +79,9 @@ DETECTED_ARCH := $(shell uname -m)
 # Default: normal (non-static) Boost linking
 BOOST_LINK_FLAGS := -lboost_filesystem -lboost_regex -lboost_date_time -lboost_system
 
-# Ubuntu 24.04 on x86_64 → use static Boost
+# Ubuntu 24.04 or 26.04 on x86_64 → use static Boost
 ifeq ($(DETECTED_OS),linux)
-  ifneq (,$(findstring 24.04,$(DETECTED_VERSION)))
+  ifneq (,$(filter 24.04 26.04,$(DETECTED_VERSION)))
     ifneq (,$(findstring x86_64,$(DETECTED_ARCH)))
       BOOST_LINK_FLAGS := -Wl,-Bstatic -lboost_filesystem -lboost_regex -lboost_date_time -lboost_system -Wl,-Bdynamic
     endif
