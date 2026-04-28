@@ -22,9 +22,17 @@ class Boost(spec('common')):
         version = self.env.build.os.version
         arch = self.env.build.cpu
 
+        # Extract major.minor (e.g. "24.04", "26.04")
+        try:
+            major, minor = version.split(".")
+            major = int(major)
+            minor =      int(minor)
+        except Exception:
+            return False
+
         return (
             osname == "linux"
-            and ("24.04" in version)
+            and major >= 24
             and ("x86_64" in str(arch.name))
         )
 
